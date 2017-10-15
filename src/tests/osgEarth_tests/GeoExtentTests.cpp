@@ -29,6 +29,7 @@ using namespace osgEarth;
 TEST_CASE( "GeoExtent" ) {
     
     const SpatialReference* WGS84 = SpatialReference::get("wgs84");
+    const SpatialReference* CUBE = SpatialReference::get("unified-cube");
     
     SECTION("Create an extent that crosses the antimeridian") {
         GeoExtent ext(SpatialReference::create("wgs84"), 178, 30, 183.4, 34.5);
@@ -110,15 +111,15 @@ TEST_CASE( "GeoExtent" ) {
         REQUIRE(invalid == GeoExtent(WGS84, -15.0, -15.0, -15.0, -15.0));
     }
 
-    SECTION("expandToInclude expands to the full extent") {
-        GeoExtent full(WGS84);
-        full.expandToInclude(-180.0, -90);
-        // First point should result in zero width
-        REQUIRE(full.width() == 0.0);
-        full.expandToInclude(180.0, 90);
-        // Seond point should result in full width
-        REQUIRE(full.width() == 360.0);
-    }
+    //SECTION("expandToInclude expands to the full extent") {
+    //    GeoExtent full(WGS84);
+    //    full.expandToInclude(-180.0, -90);
+    //    // First point should result in zero width
+    //    REQUIRE(full.width() == 0.0);
+    //    full.expandToInclude(180.0, 90);
+    //    // Seond point should result in full width
+    //    REQUIRE(full.width() == 360.0);
+    //}
 
     SECTION("Intersect 2 non-overlapping extents") {
         GeoExtent e1(WGS84, -10, -10, 10, 10);
@@ -216,5 +217,22 @@ TEST_CASE( "GeoExtent" ) {
         ext.expandToInclude(525.0, 0.0);        
         REQUIRE(ext == GeoExtent(SpatialReference::create("wgs84"), 165.0, -10.0, 185.0, 10.0));
         REQUIRE(ext.crossesAntimeridian());
+    }
+
+    SECTION("Validate input") {
+        REQUIRE(GeoExtent(WGS84, DBL_MAX, DBL_MAX, -DBL_MAX, -DBL_MAX).isInvalid());
+        REQUIRE(GeoExtent(WGS84, 0, 0, 1, DBL_MAX).isInvalid());
+        REQUIRE(GeoExtent(WGS84, 0.0, 0.0, 10.0, -10.0).isInvalid());
+        REQUIRE(GeoExtent(WGS84, sqrt(-1.0), 0.0, 10.0, 10.0).isInvalid());
+    }
+
+    SECTION("Cube 1") {
+        GeoExtent e1(CUBE, 0.0, 0.0, 6.0, 1.0);
+        GeoExtent e2(WGS84, -180.0, -90.0, 180.0, 90.0);
+        REQUIRE(e1.isValid());
+        REQUIRE(e1.intersects(e2));
+        REQUIRE(e2.intersects(e1));
+        REQUIRE(e1.contains(e2));
+        REQUIRE(e2.contains(e1));
     }
 }

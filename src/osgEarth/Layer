@@ -27,6 +27,7 @@
 #include <osgEarth/PluginLoader>
 #include <osgEarth/CachePolicy>
 #include <osgEarth/TerrainResources>
+#include <osgEarth/Cache>
 #include <osg/BoundingBox>
 #include <osg/StateSet>
 #include <osgDB/Options>
@@ -194,6 +195,18 @@ namespace osgEarth
          */
         virtual osg::Node* getOrCreateNode() { return 0L; }
 
+        /**
+         * Extent of this layer's data. 
+         * This method may return GeoExtent::INVALID which just means that the
+         * information is unavailable.
+         */
+        virtual const GeoExtent& getExtent() const;
+
+        /**
+         * Returns or generates a caching ID for this layer
+         */
+        virtual std::string getCacheID() const;
+
     public:
 
         /** Adds a property notification callback to this layer */
@@ -307,8 +320,8 @@ namespace osgEarth
     protected:
         typedef std::vector<osg::ref_ptr<LayerCallback> > CallbackVector;
         CallbackVector _callbacks;
-
         osg::ref_ptr<osgDB::Options> _readOptions;
+        osg::ref_ptr<CacheSettings> _cacheSettings;
 
         // allow the map access to the addedToMap/removedFromMap methods
         friend class Map;

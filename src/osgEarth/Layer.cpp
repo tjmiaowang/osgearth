@@ -99,6 +99,7 @@ _options(optionsPtr? optionsPtr : &_optionsConcrete)
     _uid = osgEarth::Registry::instance()->createUID();
     _renderType = RENDERTYPE_NONE;
     _status = Status::OK();
+    // init() will be called by base class
 }
 
 Layer::~Layer()
@@ -106,10 +107,67 @@ Layer::~Layer()
     OE_DEBUG << LC << "~Layer\n";
 }
 
+//void
+//Layer::setReadOptions(const osgDB::Options* options)
+//{
+//    _readOptions = Registry::cloneOrCreateOptions(options);
+//}
+
 void
-Layer::setReadOptions(const osgDB::Options* options)
+Layer::setReadOptions(const osgDB::Options* readOptions)
 {
-    _readOptions = Registry::cloneOrCreateOptions(options);
+    // We are storing _cacheSettings both in the Read Options AND
+    // as a class member. This is probably not strictly necessary
+    // but we will keep the ref in the Layer just to be on the safe
+    // side - gw
+
+    _readOptions = Registry::cloneOrCreateOptions(readOptions);
+
+    // Create some local cache settings for this layer:
+    CacheSettings* oldSettings = CacheSettings::get(readOptions);
+    _cacheSettings = oldSettings ? new CacheSettings(*oldSettings) : new CacheSettings();
+
+    // bring in the new policy for this layer if there is one:
+    _cacheSettings->integrateCachePolicy(options().cachePolicy());
+
+    // if caching is a go, install a bin.
+    if (_cacheSettings->isCacheEnabled())
+    {
+        std::string binID = getCacheID();
+
+        // make our cacheing bin!
+        CacheBin* bin = _cacheSettings->getCache()->addBin(binID);
+        if (bin)
+        {
+            OE_INFO << LC << "Cache bin is [" << binID << "]\n";
+            _cacheSettings->setCacheBin( bin );
+        }
+        else
+        {
+            // failed to create the bin, so fall back on no cache mode.
+            OE_WARN << LC << "Failed to open a cache bin [" << binID << "], disabling caching\n";
+            _cacheSettings->cachePolicy() = CachePolicy::NO_CACHE;
+        }
+    }
+
+    // Store it for further propagation!
+    _cacheSettings->store(_readOptions.get());
+}
+
+std::string
+Layer::getCacheID() const
+{
+    std::string binID;
+    if (options().cacheId().isSet() && !options().cacheId()->empty())
+    {
+        binID = options().cacheId().get();
+    }
+    else
+    {
+        Config conf = getConfig();
+        binID = hashToString(conf.toJSON(false));
+    }
+    return binID;
 }
 
 Config
@@ -258,4 +316,11 @@ Layer::postCull(osgUtil::CullVisitor* cv) const
 {
     //if (getStateSet())
     //    cv->popStateSet();
+}
+
+const GeoExtent&
+Layer::getExtent() const
+{
+    static GeoExtent s_invalid = GeoExtent::INVALID;
+    return s_invalid;
 }

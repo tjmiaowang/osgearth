@@ -881,6 +881,7 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
     double   dx         = key.getExtent().width() / (double)(numColumns-1);
     double   dy         = key.getExtent().height() / (double)(numRows-1);
 
+#if 0
     // If the incoming heightfield requests a positive border width, 
     // we need to adjust the extents so that we request data outside the
     // extent of the tile key:
@@ -892,6 +893,7 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
         xmin -= dx * (double)border;
         ymin -= dy * (double)border;
     }
+#endif
     
     // We will load the actual heightfields on demand. We might not need them all.
 #if 0
@@ -948,7 +950,7 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
             for(int i=0; i<contenders.size() && resolvedIndex<0; ++i)
             {
                 ElevationLayer* layer = contenders[i].layer.get();                
-                TileKey contenderKey = contenders[i].key;
+                TileKey& contenderKey = contenders[i].key;
                 int index = contenders[i].index;
 
                 // If there is a border, the edge points may not fall within the key extents 
@@ -956,6 +958,7 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
 
                 int n = 4; // index 4 is the center/default tile
 
+#if 0
                 if (border > 0u && !contenderKey.getExtent().contains(x, y))
                 {
                     int dTx = x < contenderKey.getExtent().xMin() ? -1 : x > contenderKey.getExtent().xMax() ? +1 : 0;
@@ -963,11 +966,12 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
                     contenderKey = contenderKey.createNeighborKey(dTx, dTy);
                     n = (dTy+1)*3 + (dTx+1);
                 }
+#endif
 
                 if ( heightFailed[n][i] )
                     continue;
 
-                TileKey actualKey = contenderKey;
+                TileKey& actualKey = contenderKey;
 
                 GeoHeightField& layerHF = heightFields[n][i];
 
@@ -1054,13 +1058,14 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
                 if (resolvedIndex >= 0 && offsets[i].index < resolvedIndex)
                     continue;
 
-                TileKey contenderKey = offsets[i].key;
+                TileKey &contenderKey = offsets[i].key;
 
                 // If there is a border, the edge points may not fall within the key extents 
                 // and we may need to fetch a neighboring key.
 
                 int n = 4; // index 4 is the center/default tile
 
+#if 0
                 if (border > 0u && !contenderKey.getExtent().contains(x, y))
                 {
                     int dTx = x < contenderKey.getExtent().xMin() ? -1 : x > contenderKey.getExtent().xMax() ? +1 : 0;
@@ -1068,6 +1073,7 @@ ElevationLayerVector::populateHeightFieldAndNormalMap(osg::HeightField*      hf,
                     contenderKey = contenderKey.createNeighborKey(dTx, dTy);
                     n = (dTy+1)*3 + (dTx+1);
                 }
+#endif
                 
                 if ( offsetFailed[n][i] == true )
                     continue;
